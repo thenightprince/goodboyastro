@@ -2,33 +2,43 @@
 import BaseHead from '../../components/BaseHead.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { getCollection } from 'astro:content';
 import FormattedDate from '../../components/FormattedDate.astro';
+import { SITE_TITLE } from '../../consts';
+import { getCollection } from 'astro:content';
 
-const posts = (
-	await getCollection('blog', ({ data }) => !data.draft || import.meta.env.DEV)
-).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+export async function getStaticPaths() {
+	const posts = await getCollection('blog', ({ data }) => !data.draft);
+	const tags = [...new Set(posts.flatMap((post) => post.data.tags ?? []))];
+	return tags.map((tag) => ({
+		params: { tag },
+		props: {
+			posts: posts
+				.filter((post) => post.data.tags?.includes(tag))
+				.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()),
+		},
+	}));
+}
+
+const { tag } = Astro.params;
+const { posts } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
-		<BaseHead title={`Posts · ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+		<BaseHead title={`${tag} · ${SITE_TITLE}`} description={`Posts tagged ${tag}`} />
 	</head>
 	<body>
 		<Header />
 		<main>
+			<h1>Tag: {tag}</h1>
 			<ul class="post-list">
 				{
 					posts.map((post) => (
 						<li>
 							<a href={`/blog/${post.id}/`}>
 								<h2 class="title">{post.data.title}</h2>
-								{post.data.description && <p class="summary">{post.data.description}</p>}
-								<p class="date">
-									<FormattedDate date={post.data.pubDate} />
-								</p>
+								<p class="date"><FormattedDate date={post.data.pubDate} /></p>
 							</a>
 						</li>
 					))
@@ -39,15 +49,12 @@ const posts = (
 		<style>
 			.post-list {
 				list-style-type: none;
-				margin: 0;
+				margin: 1.5em 0 0 0;
 				padding: 0;
 			}
 			.post-list li {
-				padding: 1.75em 0;
+				padding: 1em 0;
 				border-bottom: 1px solid rgb(var(--gray-light));
-			}
-			.post-list li:first-child {
-				padding-top: 0;
 			}
 			.post-list a {
 				display: block;
@@ -56,20 +63,12 @@ const posts = (
 			.title {
 				margin: 0;
 				color: rgb(var(--black));
-				line-height: 1.25;
-				font-size: 1.6rem;
-			}
-			.summary {
-				font-family: var(--font-sans);
-				font-style: normal;
-				color: rgb(var(--gray-dark));
-				font-size: 1rem;
-				margin: 0.5em 0;
+				font-size: 1.3rem;
 			}
 			.date {
-				margin: 0;
+				margin: 0.2em 0 0 0;
 				font-family: var(--font-mono);
-				font-size: 0.82rem;
+				font-size: 0.8rem;
 				color: rgb(var(--gray));
 			}
 			.post-list a:hover .title {

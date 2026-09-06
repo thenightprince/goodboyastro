@@ -12,6 +12,11 @@ const blog = defineCollection({
     pubDate: z.coerce.date(),
     updatedDate: z.coerce.date().optional(),
     heroImage: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    // Explicit draft flag instead of hiding files behind a fake extension —
+    // draft posts are excluded from listings, tag pages, RSS, and the
+    // production build itself (see getStaticPaths in [...slug].astro).
+    draft: z.boolean().optional().default(false),
   }),
 });
 
